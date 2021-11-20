@@ -34,15 +34,19 @@ impl DoublyLinkedList {
     }
 
     pub fn first(&self) -> Option<DoublyLinkedListNode> {
-        match *self.first.borrow() {
-            Some(ref r) => Some(DoublyLinkedListNode::new(r)),
-            None => None,
-        }
+        self.first
+            .borrow()
+            .as_ref()
+            .map(|ref_| DoublyLinkedListNode::new(ref_))
     }
 
     /// Get the last element
-    pub fn last(&self) -> Option<Rc<InternalNode>> {
-        self.first.borrow().as_ref().map(|r| Rc::clone(&r))
+    pub fn last(&self) -> Option<DoublyLinkedListNode> {
+        self.last
+            .borrow()
+            .as_ref()
+            .and_then(|weak| weak.upgrade())
+            .map(|ref ref_| DoublyLinkedListNode::new(ref_))
     }
 
     pub fn len(&self) -> usize {
@@ -62,11 +66,14 @@ impl DoublyLinkedList {
     }
 
     fn append_first(&mut self, data: i32) {
-        *self.first.borrow_mut() = Some(Rc::new(InternalNode {
+        let node = Rc::new(InternalNode {
             data,
             prev: RefCell::new(None),
             next: RefCell::new(None),
-        }));
+        });
+
+        *self.first.borrow_mut() = Some(Rc::clone(&node));
+        *self.last.borrow_mut() = Some(Rc::downgrade(&node));
     }
 
     fn append_subsequent(&mut self, _data: i32) {
@@ -119,5 +126,8 @@ mod tests {
 
         let a = l.first().unwrap();
         assert_eq!(1, a.value());
+
+        let b = l.last().unwrap();
+        assert_eq!(1, b.value());
     }
 }
