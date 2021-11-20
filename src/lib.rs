@@ -60,7 +60,7 @@ where
     pub fn append(&mut self, data: T) {
         let is_empty = matches!(*self.first.borrow(), None);
         if is_empty {
-            self.append_first(data)
+            self.insert_first(data)
         } else {
             self.append_subsequent(data)
         }
@@ -70,13 +70,13 @@ where
     pub fn prepend(&mut self, data: T) {
         let is_empty = matches!(*self.first.borrow(), None);
         if is_empty {
-            self.append_first(data)
+            self.insert_first(data)
         } else {
             self.prepend_subsequent(data)
         }
     }
 
-    fn append_first(&mut self, data: T) {
+    fn insert_first(&mut self, data: T) {
         let node = Rc::new(InternalNode {
             data,
             prev: RefCell::new(None),
