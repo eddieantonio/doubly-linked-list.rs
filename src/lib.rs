@@ -121,6 +121,13 @@ impl NodeView {
     pub fn value(&self) -> i32 {
         self.data
     }
+
+    pub fn next(&self) -> Option<NodeView> {
+        self.next
+            .as_ref()
+            .and_then(|ref weak| weak.upgrade())
+            .map(|ref r| NodeView::new(r))
+    }
 }
 
 #[cfg(test)]
@@ -163,6 +170,17 @@ mod tests {
         let first = l.first().unwrap();
         let last = l.last().unwrap();
         assert_eq!(1, first.value());
+        assert_eq!(2, last.value());
+    }
+
+    #[test]
+    fn can_traverse_list_forward() {
+        let mut l = DoublyLinkedList::new();
+        l.append(1);
+        l.append(2);
+
+        let first = l.first().unwrap();
+        let last = first.next().unwrap();
         assert_eq!(2, last.value());
     }
 }
