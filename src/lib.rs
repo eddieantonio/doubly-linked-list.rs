@@ -129,4 +129,12 @@ mod tests {
         let b = l.last().unwrap();
         assert_eq!(1, b.value());
     }
+
+    #[test]
+    fn can_append_two_items() {
+        let mut l = DoublyLinkedList::new();
+        l.append(1);
+        l.append(2);
+        println!("{:?}", l);
+    }
 }
