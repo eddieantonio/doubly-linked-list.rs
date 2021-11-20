@@ -55,6 +55,7 @@ impl DoublyLinkedList {
         }
     }
 
+    /// Append a value to the end of the list.
     pub fn append(&mut self, data: i32) {
         let is_empty = matches!(*self.first.borrow(), None);
         if is_empty {
@@ -75,8 +76,22 @@ impl DoublyLinkedList {
         *self.last.borrow_mut() = Some(Rc::downgrade(&node));
     }
 
-    fn append_subsequent(&mut self, _data: i32) {
-        panic!("not implemented!");
+    fn append_subsequent(&mut self, data: i32) {
+        let last = self
+            .last
+            .borrow()
+            .as_ref()
+            .and_then(|ref weak| weak.upgrade())
+            .unwrap();
+
+        let node = Rc::new(InternalNode {
+            data,
+            prev: RefCell::new(None),
+            next: RefCell::new(None),
+        });
+
+        *last.next.borrow_mut() = Some(Rc::clone(&node));
+        *self.last.borrow_mut() = Some(Rc::downgrade(&node));
     }
 }
 
