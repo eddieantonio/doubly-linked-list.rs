@@ -66,6 +66,16 @@ where
         }
     }
 
+    /// Prepend a value to the beginning of the list.
+    pub fn prepend(&mut self, data: T) {
+        let is_empty = matches!(*self.first.borrow(), None);
+        if is_empty {
+            self.append_first(data)
+        } else {
+            self.prepend_subsequent(data)
+        }
+    }
+
     fn append_first(&mut self, data: T) {
         let node = Rc::new(InternalNode {
             data,
@@ -93,6 +103,10 @@ where
 
         *last.next.borrow_mut() = Some(Rc::clone(&node));
         *self.last.borrow_mut() = Some(Rc::downgrade(&node));
+    }
+
+    fn prepend_subsequent(&mut self, _data: T) {
+        panic!("not implemented!");
     }
 }
 
@@ -154,6 +168,13 @@ mod tests {
     fn can_append_an_item() {
         let mut l = DoublyLinkedList::new();
         l.append('a');
+        assert_eq!(1, l.len());
+    }
+
+    #[test]
+    fn can_prepand_an_item() {
+        let mut l = DoublyLinkedList::new();
+        l.prepend('z');
         assert_eq!(1, l.len());
     }
 
