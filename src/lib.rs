@@ -17,9 +17,9 @@ pub struct InternalNode {
 
 /// Extracts data from the list.
 ///
-/// Does not own anything
+/// Does not own anything in the list.
 #[derive(Debug)]
-pub struct DoublyLinkedListNode {
+pub struct NodeView {
     data: i32,
     next: Option<Weak<InternalNode>>,
     prev: Option<Weak<InternalNode>>,
@@ -33,22 +33,21 @@ impl DoublyLinkedList {
         }
     }
 
-    pub fn first(&self) -> Option<DoublyLinkedListNode> {
-        self.first
-            .borrow()
-            .as_ref()
-            .map(|ref_| DoublyLinkedListNode::new(ref_))
+    /// Maybe get the first element in the node.
+    pub fn first(&self) -> Option<NodeView> {
+        self.first.borrow().as_ref().map(|ref_| NodeView::new(ref_))
     }
 
     /// Get the last element
-    pub fn last(&self) -> Option<DoublyLinkedListNode> {
+    pub fn last(&self) -> Option<NodeView> {
         self.last
             .borrow()
             .as_ref()
             .and_then(|weak| weak.upgrade())
-            .map(|ref ref_| DoublyLinkedListNode::new(ref_))
+            .map(|ref ref_| NodeView::new(ref_))
     }
 
+    /// How many elements are in list?
     pub fn len(&self) -> usize {
         match *self.first.borrow() {
             None => 0,
@@ -81,9 +80,9 @@ impl DoublyLinkedList {
     }
 }
 
-impl DoublyLinkedListNode {
+impl NodeView {
     fn new(source: &Rc<InternalNode>) -> Self {
-        DoublyLinkedListNode {
+        NodeView {
             data: source.data,
             prev: source
                 .prev
