@@ -51,7 +51,7 @@ impl DoublyLinkedList {
     pub fn len(&self) -> usize {
         match *self.first.borrow() {
             None => 0,
-            Some(_) => 1,
+            Some(ref node) => node.len_acc(1),
         }
     }
 
@@ -95,6 +95,15 @@ impl DoublyLinkedList {
     }
 }
 
+impl InternalNode {
+    fn len_acc(&self, acc: usize) -> usize {
+        match *self.next.borrow() {
+            Some(ref next) => next.len_acc(acc + 1),
+            None => acc,
+        }
+    }
+}
+
 impl NodeView {
     fn new(source: &Rc<InternalNode>) -> Self {
         NodeView {
@@ -128,7 +137,6 @@ mod tests {
     fn can_append_an_item() {
         let mut l = DoublyLinkedList::new();
         l.append(1);
-        println!("{:?}", l);
         assert_eq!(1, l.len());
     }
 
@@ -136,7 +144,6 @@ mod tests {
     fn can_get_that_item_from_either_side() {
         let mut l = DoublyLinkedList::new();
         l.append(1);
-        println!("{:?}", l);
 
         let a = l.first().unwrap();
         assert_eq!(1, a.value());
@@ -150,6 +157,7 @@ mod tests {
         let mut l = DoublyLinkedList::new();
         l.append(1);
         l.append(2);
-        println!("{:?}", l);
+
+        assert_eq!(2, l.len());
     }
 }
