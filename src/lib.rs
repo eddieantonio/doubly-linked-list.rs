@@ -2,28 +2,31 @@ use std::cell::RefCell;
 use std::rc::{Rc, Weak};
 
 #[derive(Debug)]
-pub struct DoublyLinkedList {
-    first: RefCell<Option<Rc<InternalNode>>>,
-    last: RefCell<Option<Weak<InternalNode>>>,
+pub struct DoublyLinkedList<T> {
+    first: RefCell<Option<Rc<InternalNode<T>>>>,
+    last: RefCell<Option<Weak<InternalNode<T>>>>,
 }
 
 /// Owns its next pointer.
 #[derive(Debug)]
-pub struct InternalNode {
-    data: i32,
-    next: RefCell<Option<Rc<InternalNode>>>,
-    prev: RefCell<Option<Weak<InternalNode>>>,
+pub struct InternalNode<T> {
+    data: T,
+    next: RefCell<Option<Rc<InternalNode<T>>>>,
+    prev: RefCell<Option<Weak<InternalNode<T>>>>,
 }
 
 /// Extracts data from the list.
 ///
 /// Does not own anything in the list.
 #[derive(Debug)]
-pub struct NodeView {
-    node: Rc<InternalNode>,
+pub struct NodeView<T> {
+    node: Rc<InternalNode<T>>,
 }
 
-impl DoublyLinkedList {
+impl<T> DoublyLinkedList<T>
+where
+    T: Copy,
+{
     pub fn new() -> Self {
         DoublyLinkedList {
             first: RefCell::new(None),
@@ -32,12 +35,12 @@ impl DoublyLinkedList {
     }
 
     /// Maybe get the first element in the node.
-    pub fn first(&self) -> Option<NodeView> {
+    pub fn first(&self) -> Option<NodeView<T>> {
         self.first.borrow().as_ref().map(|ref_| NodeView::new(ref_))
     }
 
     /// Get the last element
-    pub fn last(&self) -> Option<NodeView> {
+    pub fn last(&self) -> Option<NodeView<T>> {
         self.last
             .borrow()
             .as_ref()
@@ -54,7 +57,7 @@ impl DoublyLinkedList {
     }
 
     /// Append a value to the end of the list.
-    pub fn append(&mut self, data: i32) {
+    pub fn append(&mut self, data: T) {
         let is_empty = matches!(*self.first.borrow(), None);
         if is_empty {
             self.append_first(data)
@@ -63,7 +66,7 @@ impl DoublyLinkedList {
         }
     }
 
-    fn append_first(&mut self, data: i32) {
+    fn append_first(&mut self, data: T) {
         let node = Rc::new(InternalNode {
             data,
             prev: RefCell::new(None),
@@ -74,7 +77,7 @@ impl DoublyLinkedList {
         *self.last.borrow_mut() = Some(Rc::downgrade(&node));
     }
 
-    fn append_subsequent(&mut self, data: i32) {
+    fn append_subsequent(&mut self, data: T) {
         let last = self
             .last
             .borrow()
@@ -93,7 +96,10 @@ impl DoublyLinkedList {
     }
 }
 
-impl InternalNode {
+impl<T> InternalNode<T>
+where
+    T: Copy,
+{
     fn len_acc(&self, acc: usize) -> usize {
         match *self.next.borrow() {
             Some(ref next) => next.len_acc(acc + 1),
@@ -102,18 +108,21 @@ impl InternalNode {
     }
 }
 
-impl NodeView {
-    fn new(source: &Rc<InternalNode>) -> Self {
+impl<T> NodeView<T>
+where
+    T: Copy,
+{
+    fn new(source: &Rc<InternalNode<T>>) -> Self {
         NodeView {
             node: Rc::clone(source),
         }
     }
 
-    pub fn value(&self) -> i32 {
+    pub fn value(&self) -> T {
         self.node.data
     }
 
-    pub fn next(&self) -> Option<NodeView> {
+    pub fn next(&self) -> Option<NodeView<T>> {
         self.node
             .next
             .borrow()
@@ -121,7 +130,7 @@ impl NodeView {
             .map(|ref r| NodeView::new(r))
     }
 
-    pub fn prev(&self) -> Option<NodeView> {
+    pub fn prev(&self) -> Option<NodeView<T>> {
         self.node
             .prev
             .borrow()
@@ -137,62 +146,62 @@ mod tests {
 
     #[test]
     fn empty_has_len_0() {
-        let l = DoublyLinkedList::new();
+        let l: DoublyLinkedList<i32> = DoublyLinkedList::new();
         assert_eq!(0, l.len());
     }
 
     #[test]
     fn can_append_an_item() {
         let mut l = DoublyLinkedList::new();
-        l.append(1);
+        l.append('a');
         assert_eq!(1, l.len());
     }
 
     #[test]
     fn can_get_that_item_from_either_side() {
         let mut l = DoublyLinkedList::new();
-        l.append(1);
+        l.append('a');
 
         let a = l.first().unwrap();
-        assert_eq!(1, a.value());
+        assert_eq!('a', a.value());
 
         let b = l.last().unwrap();
-        assert_eq!(1, b.value());
+        assert_eq!('a', b.value());
     }
 
     #[test]
     fn can_append_two_items() {
         let mut l = DoublyLinkedList::new();
-        l.append(1);
-        l.append(2);
+        l.append('a');
+        l.append('b');
 
         assert_eq!(2, l.len());
 
         let first = l.first().unwrap();
         let last = l.last().unwrap();
-        assert_eq!(1, first.value());
-        assert_eq!(2, last.value());
+        assert_eq!('a', first.value());
+        assert_eq!('b', last.value());
     }
 
     #[test]
     fn can_traverse_list_forward() {
         let mut l = DoublyLinkedList::new();
-        l.append(1);
-        l.append(2);
+        l.append('a');
+        l.append('b');
 
         let first = l.first().unwrap();
         let last = first.next().unwrap();
-        assert_eq!(2, last.value());
+        assert_eq!('b', last.value());
     }
 
     #[test]
     fn can_traverse_list_backward() {
         let mut l = DoublyLinkedList::new();
-        l.append(1);
-        l.append(2);
+        l.append('a');
+        l.append('b');
 
         let last = l.last().unwrap();
         let first = last.prev().unwrap();
-        assert_eq!(1, first.value());
+        assert_eq!('a', first.value());
     }
 }
