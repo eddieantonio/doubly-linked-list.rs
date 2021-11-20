@@ -159,5 +159,10 @@ mod tests {
         l.append(2);
 
         assert_eq!(2, l.len());
+
+        let first = l.first().unwrap();
+        let last = l.last().unwrap();
+        assert_eq!(1, first.value());
+        assert_eq!(2, last.value());
     }
 }
