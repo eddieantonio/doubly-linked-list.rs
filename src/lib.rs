@@ -1,6 +1,52 @@
+//! Doubly-linked list in Rust.
+//!
+//! You were right.
+//!
+//! This is hard.
+//!
+//! And completely pointless.
+//!
+//!
+//! # Examples
+//!
+//! ```
+//! use dll::{DoublyLinkedList, dll};
+//!
+//! // Create a DoublyLinkedList using dll![]
+//! let mut l = dll!['🙈', '🙉', '🙊'];
+//! assert_eq!(3, l.len());
+//!
+//! // Append a value to the end; it becomes the last value.
+//! l.append('🚀');
+//! assert_eq!(4, l.len());
+//! assert_eq!('🚀', l.last().unwrap().value());
+//!
+//! // Prepend a value to the beginning; it becomes the first value.
+//! l.prepend('🛑');
+//! assert_eq!(5, l.len());
+//! assert_eq!('🛑', l.first().unwrap().value());
+//! ```
+
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};
 
+/// Initialize a [DoublyLinkedList] with 0 or more items.
+///
+/// # Examples
+///
+/// ```
+/// use dll::{dll, DoublyLinkedList};
+/// let l = dll![1, 2, 3];
+/// assert_eq!(3, l.len());
+/// ```
+///
+/// You will need to annotate the type if you're creating an empty [DoublyLinkedList]:
+///
+/// ```
+/// use dll::{dll, DoublyLinkedList};
+/// let l: DoublyLinkedList<u32> = dll![];
+/// assert_eq!(0, l.len());
+/// ```
 #[macro_export]
 macro_rules! dll {
     [] => {
@@ -17,6 +63,14 @@ macro_rules! dll {
     };
 }
 
+/// A discontiguous, ordered, and growable container.
+///
+/// Offers:
+///  * O(1) worst-case insertion at the front
+///  * O(1) worst-case insertion at the rear
+///  * O(_n_) worst-case indexing arbitrary elements in the list
+///
+/// but is otherwise really annoying!
 #[derive(Debug)]
 pub struct DoublyLinkedList<T> {
     first: RefCell<Option<Rc<InternalNode<T>>>>,
@@ -25,15 +79,15 @@ pub struct DoublyLinkedList<T> {
 
 /// Owns its next pointer.
 #[derive(Debug)]
-pub struct InternalNode<T> {
+struct InternalNode<T> {
     data: T,
     next: RefCell<Option<Rc<InternalNode<T>>>>,
     prev: RefCell<Option<Weak<InternalNode<T>>>>,
 }
 
-/// Extracts data from the list.
+/// A "view" of a particular positing within the [DoublyLinkedList].
 ///
-/// Does not own anything in the list.
+/// This allows you to access the value without owning the [DoublyLinkedList] internals.
 #[derive(Debug)]
 pub struct NodeView<T> {
     node: Rc<InternalNode<T>>,
@@ -43,6 +97,7 @@ impl<T> DoublyLinkedList<T>
 where
     T: Copy,
 {
+    /// Create an empty [DoublyLinkedList].
     pub fn new() -> Self {
         DoublyLinkedList {
             first: RefCell::new(None),
@@ -50,12 +105,12 @@ where
         }
     }
 
-    /// Maybe get the first element in the node.
+    /// Returns a [NodeView] to the first element in the list or `None` if the list is empty.
     pub fn first(&self) -> Option<NodeView<T>> {
         self.first.borrow().as_ref().map(|ref_| NodeView::new(ref_))
     }
 
-    /// Get the last element
+    /// Returns a [NodeView] to the last element in the list or `None` if the list is empty.
     pub fn last(&self) -> Option<NodeView<T>> {
         self.last
             .borrow()
@@ -64,7 +119,7 @@ where
             .map(|ref ref_| NodeView::new(ref_))
     }
 
-    /// How many elements are in list?
+    /// Returns how many elements are in the list.
     pub fn len(&self) -> usize {
         match *self.first.borrow() {
             None => 0,
@@ -91,6 +146,8 @@ where
             self.prepend_subsequent(data)
         }
     }
+
+    // Private methods
 
     fn insert_first(&mut self, data: T) {
         let node = Rc::new(InternalNode {
@@ -139,10 +196,11 @@ impl<T> InternalNode<T>
 where
     T: Copy,
 {
+    // calculate length via tail-recursion and accumulator
     fn len_acc(&self, acc: usize) -> usize {
         match *self.next.borrow() {
-            Some(ref next) => next.len_acc(acc + 1),
             None => acc,
+            Some(ref next) => next.len_acc(acc + 1),
         }
     }
 }
@@ -157,10 +215,12 @@ where
         }
     }
 
+    /// Return the value from this point in the list.
     pub fn value(&self) -> T {
         self.node.data
     }
 
+    /// Return a [NodeView] of the next item in list, or `None` if this is the last item in the list.
     pub fn next(&self) -> Option<NodeView<T>> {
         self.node
             .next
@@ -169,6 +229,7 @@ where
             .map(|ref r| NodeView::new(r))
     }
 
+    /// Return a [NodeView] of the previous item in list, or `None` if this is the first item in the list.
     pub fn prev(&self) -> Option<NodeView<T>> {
         self.node
             .prev
