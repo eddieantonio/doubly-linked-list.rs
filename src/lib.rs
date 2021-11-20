@@ -20,9 +20,7 @@ pub struct InternalNode {
 /// Does not own anything in the list.
 #[derive(Debug)]
 pub struct NodeView {
-    data: i32,
-    next: Option<Weak<InternalNode>>,
-    prev: Option<Weak<InternalNode>>,
+    node: Rc<InternalNode>,
 }
 
 impl DoublyLinkedList {
@@ -107,30 +105,26 @@ impl InternalNode {
 impl NodeView {
     fn new(source: &Rc<InternalNode>) -> Self {
         NodeView {
-            data: source.data,
-            prev: source
-                .prev
-                .borrow()
-                .as_ref()
-                .and_then(|ref p| p.upgrade())
-                .map(|ref p| Rc::downgrade(p)),
-            next: source.next.borrow().as_ref().map(|ref n| Rc::downgrade(n)),
+            node: Rc::clone(source),
         }
     }
 
     pub fn value(&self) -> i32 {
-        self.data
+        self.node.data
     }
 
     pub fn next(&self) -> Option<NodeView> {
-        self.next
+        self.node
+            .next
+            .borrow()
             .as_ref()
-            .and_then(|ref weak| weak.upgrade())
             .map(|ref r| NodeView::new(r))
     }
 
     pub fn prev(&self) -> Option<NodeView> {
-        self.prev
+        self.node
+            .prev
+            .borrow()
             .as_ref()
             .and_then(|ref weak| weak.upgrade())
             .map(|ref r| NodeView::new(r))
