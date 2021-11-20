@@ -3,15 +3,26 @@ use std::rc::{Rc, Weak};
 
 #[derive(Debug)]
 pub struct DoublyLinkedList {
-    first: RefCell<Option<Rc<DoublyLinkedListNode>>>,
-    last: RefCell<Option<Weak<DoublyLinkedListNode>>>,
+    first: RefCell<Option<Rc<InternalNode>>>,
+    last: RefCell<Option<Weak<InternalNode>>>,
 }
 
+/// Owns its next pointer.
+#[derive(Debug)]
+pub struct InternalNode {
+    data: i32,
+    next: RefCell<Option<Rc<InternalNode>>>,
+    prev: RefCell<Option<Weak<InternalNode>>>,
+}
+
+/// Extracts data from the list.
+///
+/// Does not own anything
 #[derive(Debug)]
 pub struct DoublyLinkedListNode {
     data: i32,
-    next: RefCell<Option<Rc<DoublyLinkedListNode>>>,
-    prev: RefCell<Option<Weak<DoublyLinkedListNode>>>,
+    next: Option<Weak<InternalNode>>,
+    prev: Option<Weak<InternalNode>>,
 }
 
 impl DoublyLinkedList {
@@ -22,15 +33,27 @@ impl DoublyLinkedList {
         }
     }
 
-    pub fn first(&self) -> Option<Rc<DoublyLinkedListNode>> {
+    pub fn first(&self) -> Option<DoublyLinkedListNode> {
         match *self.first.borrow() {
-            Some(ref r) => Some(Rc::clone(r)),
+            Some(ref r) => {
+                let external = DoublyLinkedListNode {
+                    data: r.data,
+                    prev: r
+                        .prev
+                        .borrow()
+                        .as_ref()
+                        .and_then(|ref p| p.upgrade())
+                        .map(|ref p| Rc::downgrade(p)),
+                    next: r.next.borrow().as_ref().map(|ref n| Rc::downgrade(n)),
+                };
+                Some(external)
+            }
             None => None,
         }
     }
 
     /// Get the last element
-    pub fn last(&self) -> Option<Rc<DoublyLinkedListNode>> {
+    pub fn last(&self) -> Option<Rc<InternalNode>> {
         self.first.borrow().as_ref().map(|r| Rc::clone(&r))
     }
 
@@ -51,7 +74,7 @@ impl DoublyLinkedList {
     }
 
     fn append_first(&mut self, data: i32) {
-        *self.first.borrow_mut() = Some(Rc::new(DoublyLinkedListNode {
+        *self.first.borrow_mut() = Some(Rc::new(InternalNode {
             data,
             prev: RefCell::new(None),
             next: RefCell::new(None),
@@ -72,7 +95,6 @@ impl DoublyLinkedListNode {
 #[cfg(test)]
 mod tests {
     use crate::DoublyLinkedList;
-    use std::rc::Rc;
 
     #[test]
     fn empty_has_len_0() {
@@ -94,12 +116,7 @@ mod tests {
         l.append(1);
         println!("{:?}", l);
 
-        let a = l.first();
-        let a = match a {
-            Some(ref value) => value,
-            None => panic!("should not get here!"),
-        };
-        let a = Rc::clone(a);
+        let a = l.first().unwrap();
         assert_eq!(1, a.value());
     }
 }
