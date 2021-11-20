@@ -10,7 +10,7 @@
 //! # Examples
 //!
 //! ```
-//! use dll::{DoublyLinkedList, dll};
+//! use dll::prelude::*;
 //!
 //! // Create a DoublyLinkedList using dll![]
 //! let mut l = dll!['🙈', '🙉', '🙊'];
@@ -29,6 +29,8 @@
 
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};
+
+pub mod prelude;
 
 /// Initialize a [DoublyLinkedList] with 0 or more items.
 ///
