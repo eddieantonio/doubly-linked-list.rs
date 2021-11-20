@@ -1,6 +1,22 @@
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};
 
+#[macro_export]
+macro_rules! dll {
+    [] => {
+        DoublyLinkedList::new()
+    };
+    [$($ex: expr),+] => {
+        {
+            let mut l = DoublyLinkedList::new();
+            $(
+                l.append($ex);
+            )+
+            l
+        }
+    };
+}
+
 #[derive(Debug)]
 pub struct DoublyLinkedList<T> {
     first: RefCell<Option<Rc<InternalNode<T>>>>,
@@ -242,5 +258,19 @@ mod tests {
         let last = l.last().unwrap();
         let first = last.prev().unwrap();
         assert_eq!('a', first.value());
+    }
+
+    #[test]
+    fn can_use_the_macro_empty() {
+        let l: DoublyLinkedList<u128> = dll![];
+        assert_eq!(0, l.len());
+    }
+
+    #[test]
+    fn can_use_macro_with_mulitple_values() {
+        let l = dll!['a', 'b', 'c', 'x', 'y', 'z'];
+        assert_eq!(6, l.len());
+        assert_eq!('a', l.first().unwrap().value());
+        assert_eq!('z', l.last().unwrap().value());
     }
 }
