@@ -28,6 +28,7 @@
 //! ```
 
 use std::cell::RefCell;
+use std::iter::Iterator;
 use std::rc::{Rc, Weak};
 
 pub mod prelude;
@@ -90,9 +91,18 @@ struct InternalNode<T> {
 /// A "view" of a particular positing within the [DoublyLinkedList].
 ///
 /// This allows you to access the value without owning the [DoublyLinkedList] internals.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct NodeView<T> {
     node: Rc<InternalNode<T>>,
+}
+
+/// Iterates over a [DoublyLinkedList].
+pub struct DoublyLinkedListIterator<'a, T>
+where
+    T: 'a,
+{
+    list: &'a DoublyLinkedList<T>,
+    node: Option<NodeView<T>>,
 }
 
 impl<T> DoublyLinkedList<T>
@@ -127,6 +137,24 @@ where
             None => 0,
             Some(ref node) => node.len_acc(1),
         }
+    }
+
+    /// Returns an [Iterator] over the [DoublyLinkedListIterator].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use dll::prelude::*;
+    /// let list = dll![1, 2, 3];
+    ///
+    /// let mut last = list.first().unwrap().value();
+    /// for i in list.iter().skip(1) {
+    ///     assert!(i > last);
+    ///     last = i;
+    /// }
+    /// ```
+    pub fn iter<'a>(&'a self) -> DoublyLinkedListIterator<'a, T> {
+        DoublyLinkedListIterator::new(self)
     }
 
     /// Append a value to the end of the list.
@@ -242,6 +270,36 @@ where
     }
 }
 
+impl<'a, T> DoublyLinkedListIterator<'a, T> {
+    fn new(list: &'a DoublyLinkedList<T>) -> Self {
+        DoublyLinkedListIterator { list, node: None }
+    }
+}
+
+impl<'a, T> Iterator for DoublyLinkedListIterator<'a, T>
+where
+    T: 'a + Copy,
+{
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.node {
+            // no traversal
+            None => {
+                let first = self.list.first();
+                self.node = first.clone();
+                first.map(|node| node.value())
+            }
+            // traversal in progress
+            Some(ref node) => {
+                let next = node.next();
+                self.node = next.clone();
+                next.map(|node| node.value())
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::DoublyLinkedList;
@@ -335,5 +393,12 @@ mod tests {
         assert_eq!(6, l.len());
         assert_eq!('a', l.first().unwrap().value());
         assert_eq!('z', l.last().unwrap().value());
+    }
+
+    #[test]
+    fn can_iterate_over_a_list() {
+        let l = dll![2, 3, 4];
+        let squares: Vec<_> = l.iter().map(|x| x * x).collect();
+        assert_eq!(vec![4, 9, 16], squares);
     }
 }
