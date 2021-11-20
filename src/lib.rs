@@ -86,7 +86,7 @@ impl DoublyLinkedList {
 
         let node = Rc::new(InternalNode {
             data,
-            prev: RefCell::new(None),
+            prev: RefCell::new(Some(Rc::downgrade(&last))),
             next: RefCell::new(None),
         });
 
@@ -124,6 +124,13 @@ impl NodeView {
 
     pub fn next(&self) -> Option<NodeView> {
         self.next
+            .as_ref()
+            .and_then(|ref weak| weak.upgrade())
+            .map(|ref r| NodeView::new(r))
+    }
+
+    pub fn prev(&self) -> Option<NodeView> {
+        self.prev
             .as_ref()
             .and_then(|ref weak| weak.upgrade())
             .map(|ref r| NodeView::new(r))
@@ -182,5 +189,16 @@ mod tests {
         let first = l.first().unwrap();
         let last = first.next().unwrap();
         assert_eq!(2, last.value());
+    }
+
+    #[test]
+    fn can_traverse_list_backward() {
+        let mut l = DoublyLinkedList::new();
+        l.append(1);
+        l.append(2);
+
+        let last = l.last().unwrap();
+        let first = last.prev().unwrap();
+        assert_eq!(1, first.value());
     }
 }
