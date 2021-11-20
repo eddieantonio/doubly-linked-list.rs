@@ -26,9 +26,18 @@
 //! assert_eq!(5, l.len());
 //! assert_eq!('🛑', l.first().unwrap().value());
 //! ```
+//!
+//! Create a [DoublyLinkedList] from an existing collection:
+//!
+//! ```
+//! use dll::prelude::*;
+//!
+//! let a = [1, 2, 3];
+//! let list: DoublyLinkedList<_> = a.iter().map(|x| x * x).collect();
+//! ```
 
 use std::cell::RefCell;
-use std::iter::Iterator;
+use std::iter::{FromIterator, Iterator};
 use std::rc::{Rc, Weak};
 
 pub mod prelude;
@@ -300,6 +309,20 @@ where
     }
 }
 
+impl<T> FromIterator<T> for DoublyLinkedList<T>
+where
+    T: Copy,
+{
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        let mut list: DoublyLinkedList<T> = DoublyLinkedList::new();
+        for i in iter {
+            list.append(i);
+        }
+
+        list
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::DoublyLinkedList;
@@ -400,5 +423,12 @@ mod tests {
         let l = dll![2, 3, 4];
         let squares: Vec<_> = l.iter().map(|x| x * x).collect();
         assert_eq!(vec![4, 9, 16], squares);
+    }
+
+    #[test]
+    fn can_be_created_from_a_slice() {
+        let a = ['a', 'b', 'c'];
+        let list: DoublyLinkedList<_> = a.iter().collect();
+        assert_eq!(3, list.len());
     }
 }
