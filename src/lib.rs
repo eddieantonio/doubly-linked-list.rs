@@ -105,8 +105,17 @@ where
         *self.last.borrow_mut() = Some(Rc::downgrade(&node));
     }
 
-    fn prepend_subsequent(&mut self, _data: T) {
-        panic!("not implemented!");
+    fn prepend_subsequent(&mut self, data: T) {
+        let first = Rc::clone(self.first.borrow().as_ref().unwrap());
+
+        let node = Rc::new(InternalNode {
+            data,
+            prev: RefCell::new(None),
+            next: RefCell::new(Some(Rc::clone(&first))),
+        });
+
+        *first.prev.borrow_mut() = Some(Rc::downgrade(&node));
+        *self.first.borrow_mut() = Some(Rc::clone(&node));
     }
 }
 
@@ -172,10 +181,19 @@ mod tests {
     }
 
     #[test]
-    fn can_prepand_an_item() {
+    fn can_prepend_an_item() {
         let mut l = DoublyLinkedList::new();
         l.prepend('z');
         assert_eq!(1, l.len());
+    }
+
+    #[test]
+    fn can_prepend_multiple_items() {
+        let mut l = DoublyLinkedList::new();
+        l.prepend('z');
+        l.prepend('y');
+
+        assert_eq!(2, l.len());
     }
 
     #[test]
