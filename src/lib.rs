@@ -35,19 +35,7 @@ impl DoublyLinkedList {
 
     pub fn first(&self) -> Option<DoublyLinkedListNode> {
         match *self.first.borrow() {
-            Some(ref r) => {
-                let external = DoublyLinkedListNode {
-                    data: r.data,
-                    prev: r
-                        .prev
-                        .borrow()
-                        .as_ref()
-                        .and_then(|ref p| p.upgrade())
-                        .map(|ref p| Rc::downgrade(p)),
-                    next: r.next.borrow().as_ref().map(|ref n| Rc::downgrade(n)),
-                };
-                Some(external)
-            }
+            Some(ref r) => Some(DoublyLinkedListNode::new(r)),
             None => None,
         }
     }
@@ -87,6 +75,19 @@ impl DoublyLinkedList {
 }
 
 impl DoublyLinkedListNode {
+    fn new(source: &Rc<InternalNode>) -> Self {
+        DoublyLinkedListNode {
+            data: source.data,
+            prev: source
+                .prev
+                .borrow()
+                .as_ref()
+                .and_then(|ref p| p.upgrade())
+                .map(|ref p| Rc::downgrade(p)),
+            next: source.next.borrow().as_ref().map(|ref n| Rc::downgrade(n)),
+        }
+    }
+
     pub fn value(&self) -> i32 {
         self.data
     }
