@@ -34,9 +34,11 @@
 //!
 //! let a = [1, 2, 3];
 //! let list: DoublyLinkedList<_> = a.iter().map(|x| x * x).collect();
+//! assert_eq!(dll![1, 4, 9], list);
 //! ```
 
 use std::cell::RefCell;
+use std::cmp::PartialEq;
 use std::iter::{FromIterator, Iterator};
 use std::rc::{Rc, Weak};
 
@@ -230,6 +232,30 @@ where
         *self.first.borrow_mut() = Some(Rc::clone(&node));
     }
 }
+
+impl<T> PartialEq for DoublyLinkedList<T>
+where
+    T: Copy + PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        // early-out when the lengths differ
+        if self.len() != other.len() {
+            return false;
+        }
+
+        // lengths are the same... gotta check each item
+        for (a, b) in self.iter().zip(other.iter()) {
+            if a.eq(&b) {
+                continue;
+            }
+            return false;
+        }
+
+        return true;
+    }
+}
+
+impl<T> Eq for DoublyLinkedList<T> where T: Copy + Eq {}
 
 impl<T> InternalNode<T>
 where
@@ -430,5 +456,29 @@ mod tests {
         let a = ['a', 'b', 'c'];
         let list: DoublyLinkedList<_> = a.iter().collect();
         assert_eq!(3, list.len());
+    }
+
+    #[test]
+    fn can_be_compared_two_identical_dlls() {
+        let xs: DoublyLinkedList<_> = (1..10).into_iter().collect();
+        let ys: DoublyLinkedList<_> = (1..10).into_iter().collect();
+
+        assert_eq!(xs, ys);
+    }
+
+    #[test]
+    fn can_be_compared_two_distinct_lists() {
+        let mut xs: DoublyLinkedList<_> = (1..10).into_iter().collect();
+        let ys: DoublyLinkedList<_> = (1..10).into_iter().collect();
+
+        xs.append(10);
+
+        assert_ne!(xs, ys);
+    }
+
+    #[test]
+    fn its_equal_to_itself() {
+        let list: DoublyLinkedList<_> = (1..10).into_iter().collect();
+        assert_eq!(list, list);
     }
 }
