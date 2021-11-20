@@ -2,7 +2,12 @@
 name = "dll"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+# Practice repo; no publishing!
+publish = false
+# Using Affero to scare away people from copying this for themselves, as they
+# should:
+#  a) use a better crate; or,
+#  b) write it themselves ;)
+license = "AGPL-3.0-or-later"
 
 [dependencies]
