@@ -15,11 +15,23 @@ pub struct DoublyLinkedListNode {
 }
 
 impl DoublyLinkedList {
-    fn new() -> Self {
+    pub fn new() -> Self {
         DoublyLinkedList {
             first: RefCell::new(None),
             last: RefCell::new(None),
         }
+    }
+
+    pub fn first(&self) -> Option<Rc<DoublyLinkedListNode>> {
+        match *self.first.borrow() {
+            Some(ref r) => Some(Rc::clone(r)),
+            None => None,
+        }
+    }
+
+    /// Get the last element
+    pub fn last(&self) -> Option<Rc<DoublyLinkedListNode>> {
+        self.first.borrow().as_ref().map(|r| Rc::clone(&r))
     }
 
     pub fn len(&self) -> usize {
@@ -46,12 +58,21 @@ impl DoublyLinkedList {
         }));
     }
 
-    fn append_subsequent(&mut self, data: i32) {}
+    fn append_subsequent(&mut self, _data: i32) {
+        panic!("not implemented!");
+    }
+}
+
+impl DoublyLinkedListNode {
+    pub fn value(&self) -> i32 {
+        self.data
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::DoublyLinkedList;
+    use std::rc::Rc;
 
     #[test]
     fn empty_has_len_0() {
@@ -65,5 +86,20 @@ mod tests {
         l.append(1);
         println!("{:?}", l);
         assert_eq!(1, l.len());
+    }
+
+    #[test]
+    fn can_get_that_item_from_either_side() {
+        let mut l = DoublyLinkedList::new();
+        l.append(1);
+        println!("{:?}", l);
+
+        let a = l.first();
+        let a = match a {
+            Some(ref value) => value,
+            None => panic!("should not get here!"),
+        };
+        let a = Rc::clone(a);
+        assert_eq!(1, a.value());
     }
 }
